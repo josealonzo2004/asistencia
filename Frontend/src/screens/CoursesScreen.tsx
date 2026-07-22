@@ -26,7 +26,6 @@ export function CoursesScreen({ courses, setCourses, adminMode = false, teachers
     if (!form.teacherId) nextErrors.teacher = 'Selecciona un docente.';
     if (!form.room.trim()) nextErrors.room = 'El aula es obligatoria.';
     if (!form.schedule.trim()) nextErrors.schedule = 'El horario es obligatorio.';
-    if (!Number(form.enrolled)) nextErrors.enrolled = 'Ingresa un numero valido.';
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       return;
@@ -51,7 +50,7 @@ export function CoursesScreen({ courses, setCourses, adminMode = false, teachers
           <Field label="Nombre" value={form.name} onChangeText={(name) => { setForm({ ...form, name }); setErrors({ ...errors, name: undefined }); }} placeholder="Ej. Desarrollo movil" error={errors.name} />
           <Field label="Codigo" value={form.code} onChangeText={(code) => { setForm({ ...form, code }); setErrors({ ...errors, code: undefined }); }} placeholder="Ej. ISW-702" error={errors.code} />
           <Text style={styles.fieldLabel}>Docente asignado</Text>
-          <View style={styles.courseSelector}>{teachers.map((teacher) => <Pressable key={teacher.id} style={[styles.courseChoice, form.teacherId === teacher.id && styles.courseChoiceActive]} onPress={() => { setForm({ ...form, teacherId: teacher.id, teacher: teacher.name }); setErrors({ ...errors, teacher: undefined }); }}><Text style={[styles.courseChoiceName, form.teacherId === teacher.id && styles.courseChoiceNameActive]}>{teacher.name}</Text></Pressable>)}</View>
+          {teachers.length ? <View style={styles.courseSelector}>{teachers.map((teacher) => <Pressable key={teacher.id} style={[styles.courseChoice, form.teacherId === teacher.id && styles.courseChoiceActive]} onPress={() => { setForm({ ...form, teacherId: teacher.id, teacher: teacher.name }); setErrors({ ...errors, teacher: undefined }); }}><Text style={[styles.courseChoiceName, form.teacherId === teacher.id && styles.courseChoiceNameActive]}>{teacher.name}</Text></Pressable>)}</View> : <Text style={styles.tipInline}>Primero crea y activa un docente.</Text>}
           {errors.teacher ? <Text style={styles.fieldErrorText}>{errors.teacher}</Text> : null}
           <Field label="Aula" value={form.room} onChangeText={(room) => { setForm({ ...form, room }); setErrors({ ...errors, room: undefined }); }} placeholder="Ej. Laboratorio 3" error={errors.room} />
           <Field label="Horario" value={form.schedule} onChangeText={(schedule) => { setForm({ ...form, schedule }); setErrors({ ...errors, schedule: undefined }); }} placeholder="Ej. Lun 10:00 - 12:00" error={errors.schedule} />

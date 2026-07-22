@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
-import { ChevronRight, GraduationCap } from 'lucide-react-native';
+import { KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { ChevronRight, Eye, EyeOff, GraduationCap } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 import { Field } from '../components/common';
@@ -17,6 +17,7 @@ export function AuthScreen({
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [loading, setLoading] = useState(false);
 
@@ -54,7 +55,24 @@ export function AuthScreen({
           <Text style={styles.authSubtitle}>Ingresa con tu correo institucional para acceder segun tu rol.</Text>
 
           <Field label="Correo" value={email} onChangeText={(value) => { setEmail(value); setErrors({ ...errors, email: undefined, form: undefined }); }} placeholder="correo@universidad.edu.ec" keyboardType="email-address" error={errors.email} />
-          <Field label="Contrasena" value={password} onChangeText={(value) => { setPassword(value); setErrors({ ...errors, password: undefined, form: undefined }); }} placeholder="Minimo 6 caracteres" error={errors.password} />
+          <View style={styles.fieldWrap}>
+            <Text style={[styles.fieldLabel, errors.password && styles.fieldLabelError]}>Contrasena</Text>
+            <View style={[styles.passwordInputWrap, errors.password && styles.inputError]}>
+              <TextInput
+                value={password}
+                onChangeText={(value) => { setPassword(value); setErrors({ ...errors, password: undefined, form: undefined }); }}
+                placeholder="Minimo 6 caracteres"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                style={styles.passwordInput}
+              />
+              <Pressable style={styles.passwordToggle} onPress={() => setShowPassword((current) => !current)}>
+                {showPassword ? <EyeOff size={20} color={COLORS.muted} /> : <Eye size={20} color={COLORS.muted} />}
+              </Pressable>
+            </View>
+            {errors.password ? <Text style={styles.fieldErrorText}>{errors.password}</Text> : null}
+          </View>
           {errors.form ? <Text style={styles.errorText}>{errors.form}</Text> : null}
 
           <Pressable style={[styles.primaryButton, loading && styles.buttonDisabled]} onPress={signIn} disabled={loading}>

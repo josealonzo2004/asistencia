@@ -101,10 +101,19 @@ export async function toggleUserActive(id: string): Promise<User> {
 }
 
 export async function saveCourse(course: Omit<Course, 'id'>, id?: string): Promise<Course> {
+  const payload = {
+    name: course.name,
+    code: course.code,
+    room: course.room,
+    schedule: course.schedule,
+    teacher_id: Number(course.teacherId),
+    enrolled: course.enrolled,
+  };
+
   const response = await fetch(`${API_BASE_URL}/courses${id ? `/${id}` : ''}`, {
     method: id ? 'PUT' : 'POST',
     headers: authHeaders(),
-    body: JSON.stringify(course),
+    body: JSON.stringify(payload),
   });
 
   return await readJson(response) as Course;
