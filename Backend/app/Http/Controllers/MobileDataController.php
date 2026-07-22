@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
 use App\Models\Course;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,15 @@ class MobileDataController extends Controller
 
     public function students(): array
     {
-        return User::where('role', 'student')->orderBy('name')->get()->map(fn (User $user) => [
+        $query = User::where('role', 'student')->where('active', true)->orderBy('name');
+        $currentUser = request()->user();
+        if ($currentUser?->role === 'teacher') {
+            $query->whereHas('enrollments', fn ($enrollments) => $enrollments->whereHas('course', fn ($courses) => $courses->where('teacher_id', $currentUser->id)));
+        } elseif ($currentUser?->role === 'student') {
+            $query->whereKey($currentUser->id);
+        }
+
+        return $query->get()->map(fn (User $user) => [
             'id' => (string) $user->id,
             'name' => $user->name,
             'code' => $user->student_code ?? '',
@@ -36,13 +45,22 @@ class MobileDataController extends Controller
 
     public function courses(): array
     {
-        return Course::withCount('enrollments')->with('teacher')->orderBy('name')->get()->map(fn (Course $course) => [
+        $query = Course::withCount('enrollments')->with('teacher')->orderBy('name');
+        $user = request()->user();
+        if ($user?->role === 'teacher') {
+            $query->where('teacher_id', $user->id);
+        } elseif ($user?->role === 'student') {
+            $query->whereHas('enrollments', fn ($enrollments) => $enrollments->where('student_id', $user->id));
+        }
+
+        return $query->get()->map(fn (Course $course) => [
             'id' => (string) $course->id,
             'name' => $course->name,
             'code' => $course->code,
             'room' => $course->room,
             'schedule' => $course->schedule,
             'teacher' => $course->teacher?->name ?? 'Sin docente',
+            'teacherId' => (string) $course->teacher_id,
             'enrolled' => $course->enrollments_count,
         ])->values()->all();
     }
@@ -54,15 +72,29 @@ class MobileDataController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
-            'active' => true,
+            'student_code' => $user->student_code,
+            'active' => (bool) $user->active,
         ])->values()->all();
     }
 
     public function attendance(): array
     {
-        return collect($this->students())->map(fn (array $student, int $index) => [
+        $user = request()->user();
+        if ($user?->role !== 'teacher') {
+            return [];
+        }
+
+        $session = AttendanceSession::query()
+            ->where('teacher_id', $user->id)
+            ->with('records')
+            ->latest()
+            ->first();
+
+        $records = $session?->records->keyBy('student_id') ?? collect();
+
+        return collect($this->students())->map(fn (array $student) => [
             ...$student,
-            'status' => $index === 0 ? 'Presente' : 'Ausente',
+            'status' => $records->get((int) $student['id'])?->status ?? 'Pendiente',
         ])->values()->all();
     }
 

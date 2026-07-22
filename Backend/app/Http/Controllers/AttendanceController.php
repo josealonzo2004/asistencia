@@ -19,6 +19,8 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
         if ($request->user()->role !== 'teacher') {
@@ -26,6 +28,9 @@ class AttendanceController extends Controller
         }
 
         $course = Course::findOrFail($data['course_id']);
+        if ((int) $course->teacher_id !== (int) $request->user()->id) {
+            return $this->rejected('Esta materia no esta asignada a tu cuenta.', 403);
+        }
         $startsAt = now();
         $expiresAt = $startsAt->copy()->addMinutes($data['duration_minutes'] ?? 10);
 
@@ -35,8 +40,8 @@ class AttendanceController extends Controller
             'token' => Str::uuid()->toString(),
             'starts_at' => $startsAt,
             'expires_at' => $expiresAt,
-            'latitude' => $course->latitude,
-            'longitude' => $course->longitude,
+            'latitude' => $data['latitude'],
+            'longitude' => $data['longitude'],
             'radius_meters' => $course->radius_meters,
             'status' => 'active',
         ]);
@@ -122,6 +127,64 @@ class AttendanceController extends Controller
             'attendanceStatus' => $record->status,
             'message' => $record->status === 'Tardanza' ? 'Asistencia registrada como tardanza.' : 'Asistencia registrada correctamente.',
             'distanceMeters' => round($distance, 2),
+        ]);
+    }
+
+    public function closeSession(Request $request, AttendanceSession $session): JsonResponse
+    {
+        if ($request->user()->role !== 'teacher') {
+            return $this->rejected('Solo el docente puede cerrar sesiones de asistencia.', 403);
+        }
+
+        if ((int) $session->teacher_id !== (int) $request->user()->id) {
+            return $this->rejected('Esta sesion no pertenece a tu cuenta docente.', 403);
+        }
+
+        Enrollment::query()
+            ->where('course_id', $session->course_id)
+            ->with('student')
+            ->get()
+            ->each(function (Enrollment $enrollment) use ($session) {
+                AttendanceRecord::firstOrCreate(
+                    ['attendance_session_id' => $session->id, 'student_id' => $enrollment->student_id],
+                    [
+                        'status' => 'Ausente',
+                        'latitude' => $session->latitude,
+                        'longitude' => $session->longitude,
+                        'accuracy' => null,
+                        'distance_meters' => 0,
+                        'validated_at' => now(),
+                    ],
+                );
+            });
+
+        $session->update(['status' => 'closed']);
+
+        $records = AttendanceRecord::query()
+            ->where('attendance_session_id', $session->id)
+            ->with('session')
+            ->get()
+            ->keyBy('student_id');
+
+        $attendance = Enrollment::query()
+            ->where('course_id', $session->course_id)
+            ->with('student')
+            ->get()
+            ->map(fn (Enrollment $enrollment) => [
+                'id' => (string) $enrollment->student->id,
+                'name' => $enrollment->student->name,
+                'code' => $enrollment->student->student_code ?? '',
+                'career' => 'Ingenieria de Software',
+                'semester' => '7mo',
+                'email' => $enrollment->student->email,
+                'status' => $records->get($enrollment->student_id)?->status ?? 'Ausente',
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'message' => 'Sesion cerrada. Los estudiantes pendientes quedaron como ausentes.',
+            'attendance' => $attendance,
         ]);
     }
 

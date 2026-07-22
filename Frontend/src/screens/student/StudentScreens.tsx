@@ -4,13 +4,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { BookOpen, CalendarCheck2, ClipboardCheck, MapPin, QrCode, ScanLine, X } from 'lucide-react-native';
 
-import { Header, HistoryRow, InfoRow, StatCard } from '../../components/common';
+import { EmptyState, Header, HistoryRow, InfoRow, StatCard } from '../../components/common';
 import { parseQrSession, validateAttendance } from '../../services/attendanceApi';
 import { COLORS } from '../../theme';
 import { styles } from '../../styles';
 import type { Course, SessionRecord, Student } from '../../types';
 
-export function StudentHome({ student, records }: { student: Student; records: SessionRecord[] }) {
+export function StudentHome({ student, records, onAttendanceValidated }: { student: Student; records: SessionRecord[]; onAttendanceValidated: () => Promise<void> }) {
   const absences = records.filter((record) => record.status === 'Ausente').length;
   const late = records.filter((record) => record.status === 'Tardanza').length;
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -57,6 +57,7 @@ export function StudentHome({ student, records }: { student: Student; records: S
       });
 
       Alert.alert(result.status === 'accepted' ? 'Asistencia registrada' : 'Asistencia rechazada', result.message);
+      if (result.status === 'accepted') await onAttendanceValidated();
       setScannerOpen(false);
     } catch {
       Alert.alert('Validacion preparada', 'La app ya capturo QR y GPS. Cuando Laravel este corriendo, enviara estos datos al backend.');
@@ -79,7 +80,7 @@ export function StudentHome({ student, records }: { student: Student; records: S
       </View>
       <Text style={styles.sectionTitle}>Mi asistencia</Text>
       <View style={styles.statsRow}>
-        <StatCard icon={<ClipboardCheck size={19} color={COLORS.green} />} value={`${records.length - absences}/${records.length}`} label="Asistencias" tint="#E6F7F0" />
+        <StatCard icon={<ClipboardCheck size={19} color={COLORS.green} />} value={records.length ? `${records.length - absences}/${records.length}` : '0'} label="Asistencias" tint="#E6F7F0" />
         <StatCard icon={<X size={19} color={COLORS.red} />} value={String(absences)} label="Faltas" tint="#FDE7E7" />
         <StatCard icon={<CalendarCheck2 size={19} color={COLORS.amber} />} value={String(late)} label="Tardanzas" tint="#FFF4D9" />
       </View>
@@ -107,7 +108,9 @@ export function StudentHome({ student, records }: { student: Student; records: S
         </Pressable>
       )}
       <Text style={styles.sectionTitle}>Ultimas clases</Text>
-      {records.slice(0, 3).map((record) => <HistoryRow key={record.id} record={record} />)}
+      {records.length === 0 ? (
+        <EmptyState text="Aun no tienes asistencias reales registradas." />
+      ) : records.slice(0, 3).map((record) => <HistoryRow key={record.id} record={record} />)}
     </ScrollView>
   );
 }
@@ -142,7 +145,7 @@ export function StudentHistory({ records }: { records: SessionRecord[] }) {
         <Text style={styles.reportSubtext}>El estudiante revisa, no marca asistencia.</Text>
       </View>
       <Text style={styles.sectionTitle}>Registro por clase</Text>
-      {records.map((record) => <HistoryRow key={record.id} record={record} />)}
+      {records.length === 0 ? <EmptyState text="Cuando escanees un QR valido, aparecera aqui." /> : records.map((record) => <HistoryRow key={record.id} record={record} />)}
     </ScrollView>
   );
 }

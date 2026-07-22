@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { BookOpen, Edit3, Plus, Trash2, X } from 'lucide-react-native';
 
 import { Field, Header } from '../components/common';
@@ -9,21 +9,21 @@ import { COLORS } from '../theme';
 import { styles } from '../styles';
 import type { Course } from '../types';
 
-export function CoursesScreen({ courses, setCourses, adminMode = false }: { courses: Course[]; setCourses: Dispatch<SetStateAction<Course[]>>; adminMode?: boolean }) {
+export function CoursesScreen({ courses, setCourses, adminMode = false, teachers = [] }: { courses: Course[]; setCourses: Dispatch<SetStateAction<Course[]>>; adminMode?: boolean; teachers?: { id: string; name: string }[] }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Course | null>(null);
-  const [form, setForm] = useState({ name: '', code: '', room: '', schedule: '', teacher: 'Prof. Maria', enrolled: '25' });
+  const [form, setForm] = useState({ name: '', code: '', room: '', schedule: '', teacher: '', teacherId: teachers[0]?.id ?? '', enrolled: '0' });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
   const begin = (course?: Course) => {
     setEditing(course ?? null);
-    setForm(course ? { ...course, enrolled: String(course.enrolled) } : { name: '', code: '', room: '', schedule: '', teacher: 'Prof. Maria', enrolled: '25' });
+    setForm(course ? { ...course, teacherId: course.teacherId ?? teachers.find((teacher) => teacher.name === course.teacher)?.id ?? '', enrolled: String(course.enrolled) } : { name: '', code: '', room: '', schedule: '', teacher: teachers[0]?.name ?? '', teacherId: teachers[0]?.id ?? '', enrolled: '0' });
     setFormOpen(true);
   };
   const save = async () => {
     const nextErrors: typeof errors = {};
     if (!form.name.trim()) nextErrors.name = 'El nombre es obligatorio.';
     if (!form.code.trim()) nextErrors.code = 'El codigo es obligatorio.';
-    if (!form.teacher.trim()) nextErrors.teacher = 'El docente es obligatorio.';
+    if (!form.teacherId) nextErrors.teacher = 'Selecciona un docente.';
     if (!form.room.trim()) nextErrors.room = 'El aula es obligatoria.';
     if (!form.schedule.trim()) nextErrors.schedule = 'El horario es obligatorio.';
     if (!Number(form.enrolled)) nextErrors.enrolled = 'Ingresa un numero valido.';
@@ -33,7 +33,7 @@ export function CoursesScreen({ courses, setCourses, adminMode = false }: { cour
     }
     setErrors({});
     try {
-      const saved = await saveCourse({ ...form, enrolled: Number(form.enrolled) || 0 }, editing?.id);
+      const saved = await saveCourse({ ...form, teacher: form.teacher, teacherId: form.teacherId, enrolled: Number(form.enrolled) || 0 }, editing?.id);
       if (editing) setCourses((items) => items.map((item) => item.id === editing.id ? saved : item));
       else setCourses((items) => [...items, saved]);
       setFormOpen(false);
@@ -45,16 +45,19 @@ export function CoursesScreen({ courses, setCourses, adminMode = false }: { cour
     <View style={styles.screen}>
       <Header eyebrow={adminMode ? 'ADMINISTRACION' : 'GESTION ACADEMICA'} title={adminMode ? 'Materias institucionales' : 'Materias y horarios'} action={<Pressable style={styles.iconButton} onPress={() => begin()}><Plus size={22} color={COLORS.white} /></Pressable>} />
       {formOpen ? (
-        <ScrollView style={styles.formPanel} contentContainerStyle={styles.formPanelContent} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.formPanel}>
+        <ScrollView contentContainerStyle={styles.formPanelContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.formHeader}><Text style={styles.formTitle}>{editing ? 'Editar materia' : 'Nueva materia'}</Text><Pressable onPress={() => setFormOpen(false)}><X size={21} color={COLORS.muted} /></Pressable></View>
           <Field label="Nombre" value={form.name} onChangeText={(name) => { setForm({ ...form, name }); setErrors({ ...errors, name: undefined }); }} placeholder="Ej. Desarrollo movil" error={errors.name} />
           <Field label="Codigo" value={form.code} onChangeText={(code) => { setForm({ ...form, code }); setErrors({ ...errors, code: undefined }); }} placeholder="Ej. ISW-702" error={errors.code} />
-          <Field label="Docente" value={form.teacher} onChangeText={(teacher) => { setForm({ ...form, teacher }); setErrors({ ...errors, teacher: undefined }); }} placeholder="Ej. Prof. Maria" error={errors.teacher} />
+          <Text style={styles.fieldLabel}>Docente asignado</Text>
+          <View style={styles.courseSelector}>{teachers.map((teacher) => <Pressable key={teacher.id} style={[styles.courseChoice, form.teacherId === teacher.id && styles.courseChoiceActive]} onPress={() => { setForm({ ...form, teacherId: teacher.id, teacher: teacher.name }); setErrors({ ...errors, teacher: undefined }); }}><Text style={[styles.courseChoiceName, form.teacherId === teacher.id && styles.courseChoiceNameActive]}>{teacher.name}</Text></Pressable>)}</View>
+          {errors.teacher ? <Text style={styles.fieldErrorText}>{errors.teacher}</Text> : null}
           <Field label="Aula" value={form.room} onChangeText={(room) => { setForm({ ...form, room }); setErrors({ ...errors, room: undefined }); }} placeholder="Ej. Laboratorio 3" error={errors.room} />
           <Field label="Horario" value={form.schedule} onChangeText={(schedule) => { setForm({ ...form, schedule }); setErrors({ ...errors, schedule: undefined }); }} placeholder="Ej. Lun 10:00 - 12:00" error={errors.schedule} />
-          <Field label="Estudiantes inscritos" value={form.enrolled} onChangeText={(enrolled) => { setForm({ ...form, enrolled }); setErrors({ ...errors, enrolled: undefined }); }} placeholder="25" keyboardType="numeric" error={errors.enrolled} />
           <Pressable style={styles.primaryButton} onPress={save}><Text style={styles.primaryButtonText}>{editing ? 'Guardar cambios' : 'Registrar materia'}</Text></Pressable>
         </ScrollView>
+        </KeyboardAvoidingView>
       ) : null}
       <FlatList data={courses} keyExtractor={(item) => item.id} contentContainerStyle={styles.listPad} renderItem={({ item }) => (
         <View style={styles.courseCard}>

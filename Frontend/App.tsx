@@ -1,20 +1,17 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, SafeAreaView, Text, View } from 'react-native';
+import { SafeAreaView, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, LogOut } from 'lucide-react-native';
 
 import { COLORS } from './src/theme';
-import { initialCourses, initialStudents, initialUsers, studentHistory } from './src/data/mockData';
 import { getBootstrapData, logout } from './src/services/attendanceApi';
 import { styles } from './src/styles';
 import type { AdminTab, Attendance, AuthUser, Role, Screen, SessionRecord, StudentTab, TeacherTab } from './src/types';
 import { AdminTabBar, StudentTabBar, TeacherTabBar } from './src/components/navigation';
 import { AuthScreen } from './src/screens/AuthScreen';
-import { AdminCourses, AdminHome, AdminReports, AdminUsers } from './src/screens/admin/AdminScreens';
-import { CoursesScreen } from './src/screens/CoursesScreen';
+import { AdminCourses, AdminEnrollments, AdminHome, AdminReports, AdminUsers } from './src/screens/admin/AdminScreens';
 import { StudentCalendar, StudentHistory, StudentHome, StudentProfile } from './src/screens/student/StudentScreens';
-import { AttendanceScreen, ReportsScreen, StudentsScreen, TeacherHome } from './src/screens/teacher/TeacherScreens';
+import { AttendanceScreen, ReportsScreen, TeacherHome } from './src/screens/teacher/TeacherScreens';
 
 export default function App() {
   return (
@@ -30,31 +27,35 @@ function AppContent() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role>('teacher');
   const [screen, setScreen] = useState<Screen>('home');
-  const [students, setStudents] = useState(initialStudents);
-  const [courses, setCourses] = useState(initialCourses);
-  const [users, setUsers] = useState(initialUsers);
-  const [history, setHistory] = useState<SessionRecord[]>(studentHistory);
-  const [attendance, setAttendance] = useState<Attendance[]>(
-    initialStudents.map((student, index) => ({
-      ...student,
-      status: index === 1 ? 'Ausente' : index === 2 ? 'Tardanza' : 'Presente',
-    })),
-  );
+  const [students, setStudents] = useState<Awaited<ReturnType<typeof getBootstrapData>>['students']>([]);
+  const [courses, setCourses] = useState<Awaited<ReturnType<typeof getBootstrapData>>['courses']>([]);
+  const [users, setUsers] = useState<Awaited<ReturnType<typeof getBootstrapData>>['users']>([]);
+  const [history, setHistory] = useState<SessionRecord[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+
+  const applyBootstrapData = (data: Awaited<ReturnType<typeof getBootstrapData>>) => {
+    setStudents(data.students);
+    setCourses(data.courses);
+    setSelectedCourseId(data.courses[0]?.id ?? '');
+    setUsers(data.users);
+    setAttendance(data.attendance);
+    setHistory(data.studentHistory);
+  };
+
+  const refreshBootstrapData = async () => {
+    const data = await getBootstrapData();
+    applyBootstrapData(data);
+  };
 
   if (!authenticated) {
     return (
       <AuthScreen
-        selectedRole={selectedRole}
-        onChangeRole={setSelectedRole}
         onAuthenticated={async (session) => {
           const data = await getBootstrapData();
           setSelectedRole(session.user.role);
           setAuthUser(session.user);
-          setStudents(data.students.length ? data.students : initialStudents);
-          setCourses(data.courses.length ? data.courses : initialCourses);
-          setUsers(data.users.length ? data.users : initialUsers);
-          setAttendance(data.attendance.length ? data.attendance : initialStudents.map((student, index) => ({ ...student, status: index === 1 ? 'Ausente' : index === 2 ? 'Tardanza' : 'Presente' })));
-          setHistory(data.studentHistory.length ? data.studentHistory : studentHistory);
+          applyBootstrapData(data);
           setScreen(session.user.role === 'teacher' ? 'home' : session.user.role === 'student' ? 'studentHome' : 'adminHome');
           setAuthenticated(true);
         }}
@@ -72,16 +73,18 @@ function AppContent() {
         case 'studentProfile':
           return <StudentProfile student={students.find((student) => student.email === authUser?.email) ?? students[0]} />;
         default:
-          return <StudentHome student={students.find((student) => student.email === authUser?.email) ?? students[0]} records={history} />;
+          return <StudentHome student={students.find((student) => student.email === authUser?.email) ?? students[0]} records={history} onAttendanceValidated={refreshBootstrapData} />;
       }
     }
 
     if (selectedRole === 'admin') {
       switch (screen) {
         case 'adminUsers':
-          return <AdminUsers users={users} setUsers={setUsers} />;
+          return <AdminUsers users={users} setUsers={setUsers} setStudents={setStudents} />;
         case 'adminCourses':
-          return <AdminCourses courses={courses} setCourses={setCourses} />;
+          return <AdminCourses courses={courses} setCourses={setCourses} teachers={users.filter((user) => user.role === 'teacher' && user.active)} />;
+        case 'adminEnrollments':
+          return <AdminEnrollments courses={courses} students={students} setCourses={setCourses} />;
         case 'adminReports':
           return <AdminReports users={users} courses={courses} attendance={attendance} />;
         default:
@@ -90,49 +93,34 @@ function AppContent() {
     }
 
     switch (screen) {
-      case 'students':
-        return <StudentsScreen students={students} setStudents={setStudents} />;
-      case 'courses':
-        return <CoursesScreen courses={courses} setCourses={setCourses} />;
       case 'attendance':
-        return <AttendanceScreen attendance={attendance} setAttendance={setAttendance} />;
+        return <AttendanceScreen courses={courses} selectedCourseId={selectedCourseId} onSelectCourse={setSelectedCourseId} attendance={attendance} setAttendance={setAttendance} />;
       case 'reports':
         return <ReportsScreen attendance={attendance} students={students} />;
       default:
-        return <TeacherHome students={students} attendance={attendance} onNavigate={setScreen} />;
+        return <TeacherHome courses={courses} students={students} attendance={attendance} onNavigate={setScreen} onSelectCourse={setSelectedCourseId} />;
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setAuthenticated(false);
+    setAuthUser(null);
   };
 
   return (
     <SafeAreaView style={[styles.appSafe, { paddingTop: insets.top }]}>
       <StatusBar style="dark" />
       <View style={styles.flex}>{content()}</View>
-      {selectedRole === 'teacher' && screen !== 'courses' ? (
-        <TeacherTabBar active={screen as TeacherTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} />
+      {selectedRole === 'teacher' ? (
+        <TeacherTabBar active={screen as TeacherTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} onLogout={handleLogout} />
       ) : null}
       {selectedRole === 'student' ? (
-        <StudentTabBar active={screen as StudentTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} />
+        <StudentTabBar active={screen as StudentTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} onLogout={handleLogout} />
       ) : null}
       {selectedRole === 'admin' ? (
-        <AdminTabBar active={screen as AdminTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} />
+        <AdminTabBar active={screen as AdminTab} bottomInset={insets.bottom} onChange={(tab) => setScreen(tab)} onLogout={handleLogout} />
       ) : null}
-      {selectedRole === 'teacher' && screen === 'courses' ? (
-        <Pressable style={[styles.floatingBack, { bottom: insets.bottom + 20 }]} onPress={() => setScreen('home')}>
-          <Home size={21} color={COLORS.white} />
-          <Text style={styles.floatingBackText}>Inicio</Text>
-        </Pressable>
-      ) : null}
-      <Pressable
-        style={[styles.logout, { top: insets.top + 10 }]}
-        onPress={async () => {
-          await logout();
-          setAuthenticated(false);
-          setAuthUser(null);
-        }}
-        hitSlop={8}
-      >
-        <LogOut size={20} color={COLORS.muted} />
-      </Pressable>
     </SafeAreaView>
   );
 }

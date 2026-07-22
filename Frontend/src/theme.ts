@@ -19,9 +19,3 @@ export const roleLabels: Record<Role, string> = {
   student: 'Estudiante',
   admin: 'Admin',
 };
-
-export const demoCredentials: Record<Role, string> = {
-  teacher: 'docente@universidad.edu.ec',
-  student: 'estudiante@universidad.edu.ec',
-  admin: 'admin@universidad.edu.ec',
-};

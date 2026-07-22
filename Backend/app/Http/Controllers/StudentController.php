@@ -11,18 +11,19 @@ class StudentController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeTeacherOrAdmin($request);
+        $this->authorizeAdmin($request);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
         ]);
 
         $student = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => Hash::make('123456'),
+            'password' => Hash::make($data['password']),
             'role' => 'student',
             'student_code' => $data['code'],
         ]);
@@ -32,7 +33,7 @@ class StudentController extends Controller
 
     public function update(Request $request, User $student): JsonResponse
     {
-        $this->authorizeTeacherOrAdmin($request);
+        $this->authorizeAdmin($request);
 
         if ($student->role !== 'student') {
             abort(404);
@@ -41,7 +42,8 @@ class StudentController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code,'.$student->id],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$student->id],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i', 'unique:users,email,'.$student->id],
+            'password' => ['nullable', 'string', 'min:6'],
         ]);
 
         $student->update([
@@ -50,12 +52,16 @@ class StudentController extends Controller
             'student_code' => $data['code'],
         ]);
 
+        if (! empty($data['password'] ?? null)) {
+            $student->update(['password' => Hash::make($data['password'])]);
+        }
+
         return response()->json($this->payload($student));
     }
 
     public function destroy(Request $request, User $student): JsonResponse
     {
-        $this->authorizeTeacherOrAdmin($request);
+        $this->authorizeAdmin($request);
 
         if ($student->role !== 'student') {
             abort(404);
@@ -78,10 +84,10 @@ class StudentController extends Controller
         ];
     }
 
-    private function authorizeTeacherOrAdmin(Request $request): void
+    private function authorizeAdmin(Request $request): void
     {
-        if (! in_array($request->user()->role, ['teacher', 'admin'], true)) {
-            abort(403, 'No autorizado.');
+        if ($request->user()->role !== 'admin') {
+            abort(403, 'Solo el administrador puede gestionar estudiantes.');
         }
     }
 }

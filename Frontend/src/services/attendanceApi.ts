@@ -1,4 +1,4 @@
-import type { AttendanceValidationPayload, AttendanceValidationResult, AuthSession, BootstrapPayload, Course, QrSessionPayload, Role, Student } from '../types';
+import type { Attendance, AttendanceValidationPayload, AttendanceValidationResult, AuthSession, BootstrapPayload, Course, CreateUserPayload, EnrollmentPayload, QrSessionPayload, Student, UpdateUserPayload, User } from '../types';
 
 const API_BASE_URL = 'http://192.168.100.11:8000/api';
 let authToken = '';
@@ -24,11 +24,11 @@ async function readJson(response: Response) {
   return data;
 }
 
-export async function login(email: string, password: string, role: Role): Promise<AuthSession> {
+export async function login(email: string, password: string): Promise<AuthSession> {
   const response = await fetch(`${API_BASE_URL}/login`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ email, password, role }),
+    body: JSON.stringify({ email, password }),
   });
   const session = await readJson(response) as AuthSession;
   setAuthToken(session.token);
@@ -59,6 +59,7 @@ export async function saveStudent(student: Omit<Student, 'id'>, id?: string): Pr
       name: student.name,
       code: student.code,
       email: student.email,
+      ...(student.password ? { password: student.password } : {}),
     }),
   });
 
@@ -71,6 +72,32 @@ export async function deleteStudent(id: string): Promise<void> {
     headers: authHeaders(),
   });
   await readJson(response);
+}
+
+export async function createUser(payload: CreateUserPayload): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return await readJson(response) as User;
+}
+
+export async function updateUser(id: string, payload: UpdateUserPayload): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return await readJson(response) as User;
+}
+
+export async function toggleUserActive(id: string): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${id}/active`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+  });
+  return await readJson(response) as User;
 }
 
 export async function saveCourse(course: Omit<Course, 'id'>, id?: string): Promise<Course> {
@@ -91,39 +118,50 @@ export async function deleteCourse(id: string): Promise<void> {
   await readJson(response);
 }
 
-export function buildDemoQrSession(): QrSessionPayload {
-  const now = new Date();
-  const expires = new Date(now.getTime() + 10 * 60 * 1000);
+export async function getCourseEnrollments(courseId: string): Promise<EnrollmentPayload> {
+  const response = await fetch(`${API_BASE_URL}/courses/${courseId}/enrollments`, {
+    headers: authHeaders(),
+  });
 
-  return {
-    sessionId: `session-${now.getTime()}`,
-    courseId: '1',
-    courseName: 'Aplicaciones Moviles',
-    startsAt: now.toISOString(),
-    expiresAt: expires.toISOString(),
-    room: 'Lab. 3',
-    latitude: -2.170998,
-    longitude: -79.922359,
-    radiusMeters: 120,
-    token: `ASISTE-U-${now.getTime()}`,
-  };
+  return await readJson(response) as EnrollmentPayload;
+}
+
+export async function syncCourseEnrollments(courseId: string, studentIds: string[]): Promise<{ course: Course; studentIds: string[]; message: string }> {
+  const response = await fetch(`${API_BASE_URL}/courses/${courseId}/enrollments`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ student_ids: studentIds.map((id) => Number(id)) }),
+  });
+
+  return await readJson(response) as { course: Course; studentIds: string[]; message: string };
 }
 
 export function encodeQrSession(session: QrSessionPayload) {
   return JSON.stringify(session);
 }
 
-export async function createAttendanceSession(): Promise<QrSessionPayload> {
+export async function createAttendanceSession(courseId: string, latitude: number, longitude: number): Promise<QrSessionPayload> {
   const response = await fetch(`${API_BASE_URL}/attendance/sessions`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
-      course_id: 1,
+      course_id: Number(courseId),
       duration_minutes: 10,
+      latitude,
+      longitude,
     }),
   });
 
   return await readJson(response) as QrSessionPayload;
+}
+
+export async function closeAttendanceSession(sessionId: string): Promise<{ message: string; attendance: Attendance[] }> {
+  const response = await fetch(`${API_BASE_URL}/attendance/sessions/${sessionId}/close`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+
+  return await readJson(response) as { message: string; attendance: Attendance[] };
 }
 
 export function parseQrSession(data: string): QrSessionPayload | null {

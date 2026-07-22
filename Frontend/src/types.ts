@@ -1,9 +1,9 @@
 export type Role = 'teacher' | 'student' | 'admin';
-export type AttendanceStatus = 'Presente' | 'Tardanza' | 'Ausente';
+export type AttendanceStatus = 'Presente' | 'Tardanza' | 'Ausente' | 'Pendiente';
 
-export type TeacherTab = 'home' | 'students' | 'attendance' | 'reports';
+export type TeacherTab = 'home' | 'attendance' | 'reports';
 export type StudentTab = 'studentHome' | 'studentCalendar' | 'studentHistory' | 'studentProfile';
-export type AdminTab = 'adminHome' | 'adminUsers' | 'adminCourses' | 'adminReports';
+export type AdminTab = 'adminHome' | 'adminUsers' | 'adminCourses' | 'adminEnrollments' | 'adminReports';
 export type Screen = TeacherTab | StudentTab | AdminTab | 'courses';
 
 export type Student = {
@@ -13,6 +13,7 @@ export type Student = {
   career: string;
   semester: string;
   email: string;
+  password?: string;
 };
 
 export type Course = {
@@ -22,6 +23,7 @@ export type Course = {
   room: string;
   schedule: string;
   teacher: string;
+  teacherId?: string;
   enrolled: number;
 };
 
@@ -33,6 +35,7 @@ export type User = {
   email: string;
   role: Role;
   active: boolean;
+  student_code?: string | null;
 };
 
 export type AuthUser = {
@@ -91,4 +94,24 @@ export type BootstrapPayload = {
   users: User[];
   attendance: Attendance[];
   studentHistory: SessionRecord[];
+};
+
+export type EnrollmentPayload = {
+  courseId: string;
+  studentIds: string[];
+};
+
+export type CreateUserPayload = {
+  name: string;
+  email: string;
+  role: 'teacher' | 'student';
+  student_code?: string;
+  password: string;
+};
+
+export type UpdateUserPayload = {
+  name: string;
+  email: string;
+  student_code?: string;
+  password?: string;
 };

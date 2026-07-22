@@ -12,6 +12,7 @@ export function Field({
   onChangeText,
   placeholder,
   keyboardType = 'default',
+  secureTextEntry = false,
   error,
 }: {
   label: string;
@@ -19,6 +20,7 @@ export function Field({
   onChangeText: (value: string) => void;
   placeholder: string;
   keyboardType?: 'default' | 'email-address' | 'numeric';
+  secureTextEntry?: boolean;
   error?: string;
 }) {
   return (
@@ -30,6 +32,7 @@ export function Field({
         placeholder={placeholder}
         placeholderTextColor="#94A3B8"
         keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
         autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
         style={[styles.input, error && styles.inputError]}
       />
@@ -101,8 +104,8 @@ export function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function StatusPill({ status, onPress }: { status: AttendanceStatus; onPress?: () => void }) {
-  const pillStyle = status === 'Presente' ? styles.presentPill : status === 'Tardanza' ? styles.latePill : styles.absentPill;
-  const textStyle = status === 'Presente' ? styles.presentText : status === 'Tardanza' ? styles.lateText : styles.absentText;
+  const pillStyle = status === 'Presente' ? styles.presentPill : status === 'Tardanza' ? styles.latePill : status === 'Ausente' ? styles.absentPill : styles.pendingPill;
+  const textStyle = status === 'Presente' ? styles.presentText : status === 'Tardanza' ? styles.lateText : status === 'Ausente' ? styles.absentText : styles.pendingText;
   return (
     <Pressable disabled={!onPress} onPress={onPress} style={[styles.statusPill, pillStyle]}>
       <Text style={[styles.statusText, textStyle]}>{status}</Text>
@@ -113,7 +116,7 @@ export function StatusPill({ status, onPress }: { status: AttendanceStatus; onPr
 export function HistoryRow({ record }: { record: SessionRecord }) {
   return (
     <View style={styles.noticeRow}>
-      <View style={[styles.noticeDot, { backgroundColor: record.status === 'Presente' ? COLORS.green : record.status === 'Tardanza' ? COLORS.amber : COLORS.red }]} />
+      <View style={[styles.noticeDot, { backgroundColor: record.status === 'Presente' ? COLORS.green : record.status === 'Tardanza' ? COLORS.amber : record.status === 'Ausente' ? COLORS.red : COLORS.muted }]} />
       <View style={styles.flex}>
         <Text style={styles.personName}>{record.course}</Text>
         <Text style={styles.personMeta}>{record.date} | {record.note}</Text>

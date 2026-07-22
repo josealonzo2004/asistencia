@@ -5,8 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\MobileDataController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\UserController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -17,12 +19,18 @@ Route::get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/mobile/bootstrap', [MobileDataController::class, 'bootstrap']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::patch('/users/{user}/active', [UserController::class, 'toggleActive']);
     Route::post('/students', [StudentController::class, 'store']);
     Route::put('/students/{student}', [StudentController::class, 'update']);
     Route::delete('/students/{student}', [StudentController::class, 'destroy']);
     Route::post('/courses', [CourseController::class, 'store']);
     Route::put('/courses/{course}', [CourseController::class, 'update']);
     Route::delete('/courses/{course}', [CourseController::class, 'destroy']);
+    Route::get('/courses/{course}/enrollments', [EnrollmentController::class, 'show']);
+    Route::put('/courses/{course}/enrollments', [EnrollmentController::class, 'sync']);
     Route::post('/attendance/sessions', [AttendanceController::class, 'createSession']);
+    Route::post('/attendance/sessions/{session}/close', [AttendanceController::class, 'closeSession']);
     Route::post('/attendance/validate', [AttendanceController::class, 'validateAttendance']);
 });

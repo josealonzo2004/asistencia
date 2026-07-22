@@ -13,16 +13,21 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'in:teacher,student,admin'],
         ]);
 
         $user = User::where('email', $data['email'])->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password) || $user->role !== $data['role']) {
+        if ($user && ! $user->active) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales o rol incorrectos.'],
+                'email' => ['Tu cuenta esta desactivada. Contacta al administrador.'],
+            ]);
+        }
+
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['Credenciales incorrectas.'],
             ]);
         }
 
