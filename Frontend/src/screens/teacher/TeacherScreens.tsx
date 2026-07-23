@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
-import { BarChart3, BookOpen, CalendarCheck2, ClipboardCheck, Edit3, MapPin, Plus, QrCode, Search, Trash2, Users, X } from 'lucide-react-native';
+import { AlertTriangle, BarChart3, BookOpen, CalendarCheck2, CheckCircle2, ClipboardCheck, Clock3, Edit3, MapPin, Plus, QrCode, Search, Trash2, Users, X } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import { EmptyState, Field, Header, QuickRow, ReportMetric, StatCard, StatusPill } from '../../components/common';
+import { EmptyState, Field, Header, QuickRow, StatCard, StatusPill } from '../../components/common';
 import { closeAttendanceSession, createAttendanceSession, deleteStudent, encodeQrSession, saveStudent } from '../../services/attendanceApi';
 import { COLORS } from '../../theme';
 import { styles } from '../../styles';
@@ -69,7 +69,7 @@ export function StudentsScreen({ students, setStudents }: { students: Student[];
     const nextErrors: typeof formErrors = {};
     if (!form.name.trim()) nextErrors.name = 'El nombre es obligatorio.';
     if (!form.code.trim()) nextErrors.code = 'El codigo estudiantil es obligatorio.';
-    if (!isInstitutionalEmail(form.email)) nextErrors.email = 'Usa el formato nombre@universidad.edu.ec.';
+    if (!isInstitutionalEmail(form.email)) nextErrors.email = 'Usa el formato nombre@uleam.edu.ec.';
     if (!editing && (form.password ?? '').length < 6) nextErrors.password = 'La contrasena debe tener al menos 6 caracteres.';
     if (!form.career.trim()) nextErrors.career = 'La carrera es obligatoria.';
     if (!form.semester.trim()) nextErrors.semester = 'El semestre es obligatorio.';
@@ -124,7 +124,7 @@ function StudentForm({ editing, form, setForm, errors, setErrors, onClose, onSav
       <View style={styles.formHeader}><Text style={styles.formTitle}>{editing ? 'Editar estudiante' : 'Nuevo estudiante'}</Text><Pressable onPress={onClose}><X size={21} color={COLORS.muted} /></Pressable></View>
       <Field label="Nombre completo" value={form.name} onChangeText={(name) => updateField('name', name)} placeholder="Ej. Camila Andrade" error={errors.name} />
       <Field label="Codigo estudiantil" value={form.code} onChangeText={(code) => updateField('code', code)} placeholder="Ej. 202310001" keyboardType="numeric" error={errors.code} />
-      <Field label="Correo institucional" value={form.email} onChangeText={(email) => updateField('email', email)} placeholder="estudiante@uni.edu.ec" keyboardType="email-address" error={errors.email} />
+      <Field label="Correo institucional" value={form.email} onChangeText={(email) => updateField('email', email)} placeholder="estudiante@uleam.edu.ec" keyboardType="email-address" error={errors.email} />
       <Field label={editing ? 'Nueva contrasena (opcional)' : 'Contrasena'} value={form.password ?? ''} onChangeText={(password) => updateField('password', password)} placeholder="Minimo 6 caracteres" secureTextEntry error={errors.password} />
       <Field label="Carrera" value={form.career} onChangeText={(career) => updateField('career', career)} placeholder="Carrera" error={errors.career} />
       <Field label="Semestre" value={form.semester} onChangeText={(semester) => updateField('semester', semester)} placeholder="Ej. 7mo" error={errors.semester} />
@@ -224,13 +224,44 @@ export function AttendanceScreen({ courses, selectedCourseId, onSelectCourse, at
 }
 
 export function ReportsScreen({ attendance, students }: { attendance: Attendance[]; students: Student[] }) {
-  const presentRate = attendance.length ? Math.round((attendance.filter((item) => item.status === 'Presente').length / attendance.length) * 100) : 0;
+  const present = attendance.filter((item) => item.status === 'Presente').length;
+  const late = attendance.filter((item) => item.status === 'Tardanza').length;
+  const absent = attendance.filter((item) => item.status === 'Ausente').length;
+  const pending = attendance.filter((item) => item.status === 'Pendiente').length;
+  const total = attendance.length || students.length;
+  const presentRate = total ? Math.round((present / total) * 100) : 0;
+  const riskStudents = attendance.filter((item) => item.status === 'Ausente' || item.status === 'Tardanza');
+  const statusText = presentRate >= 80 ? 'Curso estable' : presentRate >= 60 ? 'Revisar asistencia' : 'Atencion requerida';
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.scrollPad}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.scrollPad} showsVerticalScrollIndicator={false}>
       <Header eyebrow="ANALISIS DEL CURSO" title="Reportes" />
-      <View style={styles.reportHero}><Text style={styles.reportCaption}>ASISTENCIA DEL CURSO</Text><Text style={styles.reportValue}>{presentRate}%</Text><Text style={styles.reportSubtext}>Aplicaciones Moviles | Julio 2026</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${presentRate}%` }]} /></View></View>
-      <Text style={styles.sectionTitle}>Resumen de la sesion</Text><View style={styles.reportGrid}><ReportMetric label="Total estudiantes" value={String(students.length)} color={COLORS.blue} /><ReportMetric label="Presentes" value={String(attendance.filter((item) => item.status === 'Presente').length)} color={COLORS.green} /><ReportMetric label="Tardanzas" value={String(attendance.filter((item) => item.status === 'Tardanza').length)} color={COLORS.amber} /><ReportMetric label="Ausentes" value={String(attendance.filter((item) => item.status === 'Ausente').length)} color={COLORS.red} /></View>
-      <Text style={styles.sectionTitle}>Estudiantes con novedad</Text>{attendance.filter((item) => item.status !== 'Presente').length === 0 ? <EmptyState text="No hay novedades en esta sesion." /> : attendance.filter((item) => item.status !== 'Presente').map((item) => <View style={styles.noticeRow} key={item.id}><View style={styles.noticeDot} /><View style={styles.flex}><Text style={styles.personName}>{item.name}</Text><Text style={styles.personMeta}>{item.status} | {item.code}</Text></View></View>)}
+      <View style={styles.reportStatusCard}>
+        <View style={styles.reportRing}>
+          <Text style={styles.reportRingValue}>{presentRate}%</Text>
+          <Text style={styles.reportRingLabel}>asistencia</Text>
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.reportStatusTitle}>{statusText}</Text>
+          <Text style={styles.reportStatusText}>Resultado calculado con los registros reales de la sesion activa o cerrada.</Text>
+        </View>
+      </View>
+
+      <Text style={styles.sectionTitle}>Lectura rapida</Text>
+      <View style={styles.reportStack}>
+        <View style={styles.reportLine}><View style={styles.reportLineTop}><CheckCircle2 size={18} color={COLORS.green} /><Text style={styles.reportLineLabel}>Presentes</Text><Text style={styles.reportLineValue}>{present}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${total ? Math.round((present / total) * 100) : 0}%`, backgroundColor: COLORS.green }]} /></View></View>
+        <View style={styles.reportLine}><View style={styles.reportLineTop}><Clock3 size={18} color={COLORS.amber} /><Text style={styles.reportLineLabel}>Tardanzas</Text><Text style={styles.reportLineValue}>{late}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${total ? Math.round((late / total) * 100) : 0}%`, backgroundColor: COLORS.amber }]} /></View></View>
+        <View style={styles.reportLine}><View style={styles.reportLineTop}><AlertTriangle size={18} color={COLORS.red} /><Text style={styles.reportLineLabel}>Ausentes</Text><Text style={styles.reportLineValue}>{absent}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${total ? Math.round((absent / total) * 100) : 0}%`, backgroundColor: COLORS.red }]} /></View></View>
+      </View>
+
+      <Text style={styles.sectionTitle}>Seguimiento docente</Text>
+      <View style={styles.quickList}>
+        <QuickRow icon={<Users size={21} color={COLORS.blue} />} title={`${total} estudiantes considerados`} subtitle={`${pending} pendientes de registrar o cerrar sesion`} onPress={() => Alert.alert('Detalle', 'Los pendientes cambian cuando el estudiante escanea o cuando cierras la sesion.')} />
+        <QuickRow icon={<AlertTriangle size={21} color={COLORS.red} />} title={`${riskStudents.length} novedades`} subtitle="Estudiantes con falta o tardanza" onPress={() => Alert.alert('Novedades', riskStudents.length ? riskStudents.map((item) => `${item.name}: ${item.status}`).join('\n') : 'No hay novedades.')} />
+      </View>
+
+      <Text style={styles.sectionTitle}>Lista de atencion</Text>
+      {riskStudents.length === 0 ? <EmptyState text="No hay estudiantes con novedades." /> : riskStudents.map((item) => <View style={styles.noticeRow} key={item.id}><View style={[styles.noticeDot, { backgroundColor: item.status === 'Ausente' ? COLORS.red : COLORS.amber }]} /><View style={styles.flex}><Text style={styles.personName}>{item.name}</Text><Text style={styles.personMeta}>{item.status} | {item.code}</Text></View><StatusPill status={item.status} /></View>)}
     </ScrollView>
   );
 }

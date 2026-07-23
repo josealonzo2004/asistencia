@@ -12,10 +12,13 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\\.edu\\.ec$/i', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\\.edu\\.ec$/i', 'unique:users,email'],
             'role' => ['required', 'in:teacher,student'],
             'student_code' => ['nullable', 'required_if:role,student', 'string', 'max:50', 'unique:users,student_code'],
             'password' => ['required', 'string', 'min:6'],
@@ -35,6 +38,9 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $this->authorizeAdmin($request);
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
 
         if ($user->role === 'admin') {
             abort(422, 'La cuenta de administrador no se edita desde este panel.');
@@ -42,7 +48,7 @@ class UserController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\\.edu\\.ec$/i', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\\.edu\\.ec$/i', 'unique:users,email,'.$user->id],
             'student_code' => ['nullable', 'required_if:role,student', 'string', 'max:50', 'unique:users,student_code,'.$user->id],
             'password' => ['nullable', 'string', 'min:6'],
         ]);

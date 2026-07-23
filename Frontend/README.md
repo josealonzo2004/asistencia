@@ -67,7 +67,7 @@ No se debe usar `localhost` desde el celular, porque `localhost` apuntaria al pr
 
 El administrador se encarga de preparar el sistema:
 
-- Crear estudiantes.
+- Crear estudiantes con correo `nombre@uleam.edu.ec`.
 - Crear docentes.
 - Crear materias.
 - Asignar docentes a materias.
@@ -221,4 +221,3 @@ Para presentar, conviene crear datos desde el administrador:
 - Asignar el docente a la materia.
 - Asignar estudiantes a la materia.
 - Generar una asistencia y escanear el QR.
-

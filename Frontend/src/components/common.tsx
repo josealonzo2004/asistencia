@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { ChevronRight, Users } from 'lucide-react-native';
+import { ChevronRight, Eye, EyeOff, Users } from 'lucide-react-native';
 
 import { COLORS } from '../theme';
 import { styles } from '../styles';
@@ -23,19 +24,39 @@ export function Field({
   secureTextEntry?: boolean;
   error?: string;
 }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = secureTextEntry;
+
   return (
     <View style={styles.fieldWrap}>
       <Text style={[styles.fieldLabel, error && styles.fieldLabelError]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
-        keyboardType={keyboardType}
-        secureTextEntry={secureTextEntry}
-        autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
-        style={[styles.input, error && styles.inputError]}
-      />
+      {isPassword ? (
+        <View style={[styles.passwordInputWrap, error && styles.inputError]}>
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor="#94A3B8"
+            keyboardType={keyboardType}
+            secureTextEntry={!visible}
+            autoCapitalize="none"
+            style={styles.passwordInput}
+          />
+          <Pressable style={styles.passwordToggle} onPress={() => setVisible((current) => !current)}>
+            {visible ? <EyeOff size={20} color={COLORS.muted} /> : <Eye size={20} color={COLORS.muted} />}
+          </Pressable>
+        </View>
+      ) : (
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#94A3B8"
+          keyboardType={keyboardType}
+          autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
+          style={[styles.input, error && styles.inputError]}
+        />
+      )}
       {error ? <Text style={styles.fieldErrorText}>{error}</Text> : null}
     </View>
   );

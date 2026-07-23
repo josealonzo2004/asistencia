@@ -12,12 +12,16 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $data = $request->validate([
-            'email' => ['required', 'email', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i'],
+            'email' => ['required', 'email', 'regex:/^[A-Za-z0-9._%+-]+@uleam\.edu\.ec$/i'],
             'password' => ['required', 'string', 'min:6'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::whereRaw('LOWER(email) = ?', [$data['email']])->first();
 
         if ($user && ! $user->active) {
             throw ValidationException::withMessages([

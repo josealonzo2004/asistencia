@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $teacher = User::updateOrCreate([
-            'email' => 'docente@universidad.edu.ec',
+            'email' => 'docente@uleam.edu.ec',
         ], [
             'name' => 'Maria Andrade',
             'password' => Hash::make('123456'),
@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $student = User::updateOrCreate([
-            'email' => 'estudiante@universidad.edu.ec',
+            'email' => 'estudiante@uleam.edu.ec',
         ], [
             'name' => 'Ana Torres',
             'password' => Hash::make('123456'),
@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::updateOrCreate([
-            'email' => 'admin@universidad.edu.ec',
+            'email' => 'admin@uleam.edu.ec',
         ], [
             'name' => 'Coordinacion Academica',
             'password' => Hash::make('123456'),

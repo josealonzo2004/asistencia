@@ -12,11 +12,14 @@ class StudentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code'],
-            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\.edu\.ec$/i', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
         ]);
 
@@ -34,6 +37,9 @@ class StudentController extends Controller
     public function update(Request $request, User $student): JsonResponse
     {
         $this->authorizeAdmin($request);
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
 
         if ($student->role !== 'student') {
             abort(404);
@@ -42,7 +48,7 @@ class StudentController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code,'.$student->id],
-            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@universidad\.edu\.ec$/i', 'unique:users,email,'.$student->id],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\.edu\.ec$/i', 'unique:users,email,'.$student->id],
             'password' => ['nullable', 'string', 'min:6'],
         ]);
 
