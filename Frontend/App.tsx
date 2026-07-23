@@ -98,7 +98,7 @@ function AppContent() {
       case 'reports':
         return <ReportsScreen attendance={attendance} students={students} />;
       default:
-        return <TeacherHome courses={courses} students={students} attendance={attendance} onNavigate={setScreen} onSelectCourse={setSelectedCourseId} />;
+        return <TeacherHome teacherName={authUser?.name ?? 'Docente'} courses={courses} students={students} attendance={attendance} onNavigate={setScreen} onSelectCourse={setSelectedCourseId} />;
     }
   };
 

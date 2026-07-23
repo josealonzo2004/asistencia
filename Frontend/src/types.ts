@@ -36,6 +36,8 @@ export type User = {
   role: Role;
   active: boolean;
   student_code?: string | null;
+  career?: string | null;
+  semester?: string | null;
 };
 
 export type AuthUser = {
@@ -106,6 +108,8 @@ export type CreateUserPayload = {
   email: string;
   role: 'teacher' | 'student';
   student_code?: string;
+  career?: string;
+  semester?: string;
   password: string;
 };
 
@@ -113,5 +117,7 @@ export type UpdateUserPayload = {
   name: string;
   email: string;
   student_code?: string;
+  career?: string;
+  semester?: string;
   password?: string;
 };

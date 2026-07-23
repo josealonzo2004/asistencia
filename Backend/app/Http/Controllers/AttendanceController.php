@@ -174,8 +174,8 @@ class AttendanceController extends Controller
                 'id' => (string) $enrollment->student->id,
                 'name' => $enrollment->student->name,
                 'code' => $enrollment->student->student_code ?? '',
-                'career' => 'Ingenieria de Software',
-                'semester' => '7mo',
+                'career' => $enrollment->student->career ?? '',
+                'semester' => $enrollment->student->semester ?? '',
                 'email' => $enrollment->student->email,
                 'status' => $records->get($enrollment->student_id)?->status ?? 'Ausente',
             ])

@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('123456'),
             'role' => 'teacher',
             'student_code' => null,
+            'career' => null,
+            'semester' => null,
         ]);
 
         $student = User::updateOrCreate([
@@ -28,6 +30,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('123456'),
             'role' => 'student',
             'student_code' => '202310245',
+            'career' => 'Ingenieria de Software',
+            'semester' => '7mo',
         ]);
 
         User::updateOrCreate([
@@ -37,6 +41,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('123456'),
             'role' => 'admin',
             'student_code' => null,
+            'career' => null,
+            'semester' => null,
         ]);
 
         $course = Course::updateOrCreate([

@@ -37,8 +37,8 @@ class MobileDataController extends Controller
             'id' => (string) $user->id,
             'name' => $user->name,
             'code' => $user->student_code ?? '',
-            'career' => 'Ingenieria de Software',
-            'semester' => '7mo',
+            'career' => $user->career ?? '',
+            'semester' => $user->semester ?? '',
             'email' => $user->email,
         ])->values()->all();
     }
@@ -73,6 +73,8 @@ class MobileDataController extends Controller
             'email' => $user->email,
             'role' => $user->role,
             'student_code' => $user->student_code,
+            'career' => $user->career,
+            'semester' => $user->semester,
             'active' => (bool) $user->active,
         ])->values()->all();
     }

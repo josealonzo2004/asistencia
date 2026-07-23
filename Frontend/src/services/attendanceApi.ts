@@ -59,6 +59,8 @@ export async function saveStudent(student: Omit<Student, 'id'>, id?: string): Pr
       name: student.name,
       code: student.code,
       email: student.email,
+      career: student.career,
+      semester: student.semester,
       ...(student.password ? { password: student.password } : {}),
     }),
   });

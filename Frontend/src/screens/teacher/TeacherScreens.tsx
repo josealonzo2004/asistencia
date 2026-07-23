@@ -13,13 +13,14 @@ import type { Attendance, Course, QrSessionPayload, Screen, Student } from '../.
 import { initials } from '../../utils/text';
 import { isInstitutionalEmail } from '../../utils/validation';
 
-export function TeacherHome({ courses, students, attendance, onNavigate, onSelectCourse }: { courses: Course[]; students: Student[]; attendance: Attendance[]; onNavigate: (screen: Screen) => void; onSelectCourse: (id: string) => void }) {
+export function TeacherHome({ teacherName, courses, students, attendance, onNavigate, onSelectCourse }: { teacherName: string; courses: Course[]; students: Student[]; attendance: Attendance[]; onNavigate: (screen: Screen) => void; onSelectCourse: (id: string) => void }) {
   const present = attendance.filter((item) => item.status === 'Presente').length;
   const pending = attendance.filter((item) => item.status === 'Pendiente').length;
   const enrolledTotal = courses.reduce((total, course) => total + course.enrolled, 0);
+  const firstName = teacherName.trim().split(' ')[0] || 'Docente';
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scrollPad} showsVerticalScrollIndicator={false}>
-      <Header eyebrow="DOCENTE" title="Hola, Prof. Maria" />
+      <Header eyebrow="DOCENTE" title={`Hola, ${firstName}`} />
       <View style={styles.teacherHero}>
         <View style={styles.teacherHeroIcon}><ClipboardCheck size={25} color={COLORS.white} /></View>
         <View style={styles.flex}>
@@ -60,10 +61,10 @@ export function StudentsScreen({ students, setStudents }: { students: Student[];
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Student | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState<Omit<Student, 'id'>>({ name: '', code: '', career: 'Ingenieria de Software', semester: '7mo', email: '', password: '' });
+  const [form, setForm] = useState<Omit<Student, 'id'>>({ name: '', code: '', career: '', semester: '', email: '', password: '' });
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof Omit<Student, 'id'>, string>>>({});
   const filtered = students.filter((student) => `${student.name} ${student.code}`.toLowerCase().includes(search.toLowerCase()));
-  const startNew = () => { setEditing(null); setForm({ name: '', code: '', career: 'Ingenieria de Software', semester: '7mo', email: '', password: '' }); setFormOpen(true); };
+  const startNew = () => { setEditing(null); setForm({ name: '', code: '', career: '', semester: '', email: '', password: '' }); setFormOpen(true); };
   const startEdit = (student: Student) => { setEditing(student); setForm(student); setFormOpen(true); };
   const save = async () => {
     const nextErrors: typeof formErrors = {};

@@ -20,6 +20,8 @@ class StudentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code'],
             'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\.edu\.ec$/i', 'unique:users,email'],
+            'career' => ['required', 'string', 'max:255'],
+            'semester' => ['required', 'string', 'max:50'],
             'password' => ['required', 'string', 'min:6'],
         ]);
 
@@ -29,6 +31,8 @@ class StudentController extends Controller
             'password' => Hash::make($data['password']),
             'role' => 'student',
             'student_code' => $data['code'],
+            'career' => $data['career'],
+            'semester' => $data['semester'],
         ]);
 
         return response()->json($this->payload($student), 201);
@@ -49,6 +53,8 @@ class StudentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:users,student_code,'.$student->id],
             'email' => ['required', 'email', 'max:255', 'regex:/^[A-Za-z0-9._%+-]+@uleam\.edu\.ec$/i', 'unique:users,email,'.$student->id],
+            'career' => ['required', 'string', 'max:255'],
+            'semester' => ['required', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],
         ]);
 
@@ -56,6 +62,8 @@ class StudentController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'student_code' => $data['code'],
+            'career' => $data['career'],
+            'semester' => $data['semester'],
         ]);
 
         if (! empty($data['password'] ?? null)) {
@@ -84,8 +92,8 @@ class StudentController extends Controller
             'id' => (string) $student->id,
             'name' => $student->name,
             'code' => $student->student_code,
-            'career' => 'Ingenieria de Software',
-            'semester' => '7mo',
+            'career' => $student->career ?? '',
+            'semester' => $student->semester ?? '',
             'email' => $student->email,
         ];
     }
