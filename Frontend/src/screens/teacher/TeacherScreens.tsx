@@ -70,7 +70,7 @@ export function StudentsScreen({ students, setStudents }: { students: Student[];
     if (!form.name.trim()) nextErrors.name = 'El nombre es obligatorio.';
     if (!form.code.trim()) nextErrors.code = 'El codigo estudiantil es obligatorio.';
     if (!isInstitutionalEmail(form.email)) nextErrors.email = 'Usa el formato nombre@uleam.edu.ec.';
-    if (!editing && (form.password ?? '').length < 6) nextErrors.password = 'La contrasena debe tener al menos 6 caracteres.';
+    if (!editing && (form.password ?? '').length < 6) nextErrors.password = 'La contraseña debe tener al menos 6 caracteres.';
     if (!form.career.trim()) nextErrors.career = 'La carrera es obligatoria.';
     if (!form.semester.trim()) nextErrors.semester = 'El semestre es obligatorio.';
     if (Object.keys(nextErrors).length) {
@@ -125,7 +125,7 @@ function StudentForm({ editing, form, setForm, errors, setErrors, onClose, onSav
       <Field label="Nombre completo" value={form.name} onChangeText={(name) => updateField('name', name)} placeholder="Ej. Camila Andrade" error={errors.name} />
       <Field label="Codigo estudiantil" value={form.code} onChangeText={(code) => updateField('code', code)} placeholder="Ej. 202310001" keyboardType="numeric" error={errors.code} />
       <Field label="Correo institucional" value={form.email} onChangeText={(email) => updateField('email', email)} placeholder="estudiante@uleam.edu.ec" keyboardType="email-address" error={errors.email} />
-      <Field label={editing ? 'Nueva contrasena (opcional)' : 'Contrasena'} value={form.password ?? ''} onChangeText={(password) => updateField('password', password)} placeholder="Minimo 6 caracteres" secureTextEntry error={errors.password} />
+      <Field label={editing ? 'Nueva contraseña (opcional)' : 'Contraseña'} value={form.password ?? ''} onChangeText={(password) => updateField('password', password)} placeholder="Minimo 6 caracteres" secureTextEntry error={errors.password} />
       <Field label="Carrera" value={form.career} onChangeText={(career) => updateField('career', career)} placeholder="Carrera" error={errors.career} />
       <Field label="Semestre" value={form.semester} onChangeText={(semester) => updateField('semester', semester)} placeholder="Ej. 7mo" error={errors.semester} />
       <Pressable style={styles.primaryButton} onPress={onSave}><Text style={styles.primaryButtonText}>{editing ? 'Guardar cambios' : 'Registrar estudiante'}</Text></Pressable>

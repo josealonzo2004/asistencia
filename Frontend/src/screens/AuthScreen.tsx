@@ -24,7 +24,7 @@ export function AuthScreen({
     const normalizedEmail = email.trim().toLowerCase();
     const nextErrors: typeof errors = {};
     if (!isInstitutionalEmail(normalizedEmail)) nextErrors.email = 'Usa el formato nombre@uleam.edu.ec.';
-    if (password.length < 6) nextErrors.password = 'La contrasena debe tener al menos 6 caracteres.';
+    if (password.length < 6) nextErrors.password = 'La contraseña debe tener al menos 6 caracteres.';
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       return;
@@ -57,7 +57,7 @@ export function AuthScreen({
 
             <View style={styles.authFormCard}>
               <Field label="Correo" value={email} onChangeText={(value) => { setEmail(value); setErrors({ ...errors, email: undefined, form: undefined }); }} placeholder="correo@uleam.edu.ec" keyboardType="email-address" error={errors.email} />
-              <Field label="Contrasena" value={password} onChangeText={(value) => { setPassword(value); setErrors({ ...errors, password: undefined, form: undefined }); }} placeholder="Minimo 6 caracteres" secureTextEntry error={errors.password} />
+              <Field label="Contraseña" value={password} onChangeText={(value) => { setPassword(value); setErrors({ ...errors, password: undefined, form: undefined }); }} placeholder="Minimo 6 caracteres" secureTextEntry error={errors.password} />
               {errors.form ? <Text style={styles.errorText}>{errors.form}</Text> : null}
 
               <Pressable style={[styles.primaryButton, loading && styles.buttonDisabled]} onPress={signIn} disabled={loading}>
